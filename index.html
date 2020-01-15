@@ -1,0 +1,137 @@
+<!doctype html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">  
+<style>
+html, body {
+  margin: 0;
+  padding: 0;
+}
+
+#output {
+  padding: 30px;
+}
+
+.section {
+  margin-bottom: 10px;
+  font-size: 20px;
+}
+
+.desc {
+  font-size: 16px;
+  color: #666;
+  margin-left: 20px;
+}
+</style>
+</head>
+<body>
+<div id="output"></div>
+
+<script type="text/javascript">
+
+const output = document.querySelector('#output');
+const gamepadIndexes = new Set();
+
+const CONTROLLER_IDS = {
+  'Wireless Controller (STANDARD GAMEPAD Vendor: 054c Product: 09cc)': 'PS4 DUALSHOCK',
+  'Wireless Controller (STANDARD GAMEPAD Vendor: 054c Product: 05c4)': 'PS4 DUALSHOCK',
+  '54c-5c4-Wireless Controller': 'PS4 DUALSHOCK',
+  '54c-9cc-Wireless Controller': 'PS4 DUALSHOCK',
+};
+
+const BUTTONS_NAMES = {
+  'PS4 DUALSHOCK': [
+    'X',
+    'circle',
+    'square',
+    'triangle',
+    'L1',
+    'R1',
+    'L2',
+    'R2',
+    'share',
+    'options',
+    'L3',
+    'R3',
+    'up',
+    'down',
+    'left',
+    'right',
+    'ps',
+    'panel'
+  ]
+};
+
+window.addEventListener('gamepadconnected', (e) => {
+  gamepadIndexes.add(e.gamepad.index);
+});
+
+window.addEventListener('gamepaddisconnected', (e) => {
+  gamepadIndexes.delete(e.gamepad.index);
+});
+
+function loop() {
+  let text = '';
+
+  const connected = gamepadIndexes.size > 0;
+  
+  text += '<div class="section">';
+  text += `Status: ${connected ? 'connected' : 'disconnected'}`;
+  text += '</div>';
+
+  if (connected) {
+    gamepadIndexes.forEach((gamepadIndex) => {
+      const gamepad = navigator.getGamepads()[gamepadIndex];
+      const name = CONTROLLER_IDS[gamepad.id] ;
+
+      // ID
+      text += `<div class="section">${name || `id: ${gamepad.id}`} (${gamepad.buttons.length} buttons)</div>`;
+
+      // STICKS
+      text += '<div class="section">';
+      text += 'Left stick';
+      text += `<div class="desc">x: ${gamepad.axes[0].toFixed(2)}</div>`;
+      text += `<div class="desc">y: ${gamepad.axes[1].toFixed(2)}</div>`;
+      text += '</div>';
+
+      text += '<div class="section">';
+      text += 'Right stick';
+      text += `<div class="desc">x: ${gamepad.axes[2].toFixed(2)}</div>`;
+      text += `<div class="desc">y: ${gamepad.axes[3].toFixed(2)}</div>`;
+      text += '</div>';
+
+      // TOUCH
+      if (gamepad.touchEvents) {
+        text += '<div class="section">';
+
+        gamepad.touchEvents.forEach((te, touchIndex) => {
+          text += `<div class="desc">Touch ${touchIndex}: ${te.position[0].toFixed(2)}, ${te.position[1].toFixed(2)}</div>`;
+        });
+
+        text += '</div>';
+      }
+
+      // BUTTONS
+      gamepad.buttons.forEach((button, index) => {
+        text += '<div class="section">'
+
+        if (button.value) {
+          text += `Button: ${name ? BUTTONS_NAMES[name][index] : 'UNDEFINED'}`;
+          text += `<div class="desc">pressed: ${button.pressed}</div>`;
+          text += `<div class="desc">touched: ${button.touched}</div>`;
+          text += `<div class="desc">value: ${Math.floor(button.value * 100)}</div>`;
+        }
+
+        text += '</div>'
+      });
+    });
+  }
+
+  output.innerHTML = text;
+
+  requestAnimationFrame(loop)
+}
+
+loop();
+
+</script>
+</body>
